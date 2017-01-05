@@ -13,15 +13,17 @@
 
 'use strict';
 
-var hostedmodels = require('../../prediction/hostedmodels');
+require(`../../system-test/_setup`);
 
-describe('prediction:hostedmodels', function () {
-  it('should predict', function (done) {
-    hostedmodels.main('good night', function (err, result) {
-      assert.ifError(err);
-      assert(result);
-      assert(console.log.calledWith('Sentiment for "good night": positive'));
-      done();
+const path = require(`path`);
+
+const cmd = `node hostedmodels.js`;
+const cwd = path.join(__dirname, `..`);
+const text = `good night`;
+
+test(`should predict`, (t) => {
+  return runAsync(`${cmd} "${text}"`, cwd)
+    .then((stdout) => {
+      t.is(stdout.includes(`Sentiment for "${text}": positive`), true);
     });
-  });
 });

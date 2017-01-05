@@ -15,9 +15,10 @@
 
 'use strict';
 
-const Translate = require(`@google-cloud/translate`);
+require(`../../system-test/_setup`);
+
+const translate = require(`@google-cloud/translate`)();
 const path = require(`path`);
-const run = require(`../../utils`).run;
 
 const cwd = path.join(__dirname, `..`);
 const cmd = `node translate.js`;
@@ -26,72 +27,84 @@ const text2 = `Goodbye!`;
 const model = `nmt`;
 const toLang = `ru`;
 
-describe(`translate:translate`, () => {
-  const translate = Translate();
+test(`should detect language of a single string`, (t) => {
+  return runAsync(`${cmd} detect "${text}"`, cwd)
+    .then((stdout) => {
+      return translate.detect(text)
+        .then((results) => {
+          const expected = `Detections:\n${text} => ${results[0].language}`;
+          t.is(stdout, expected);
+        });
+    });
+});
 
-  it(`should detect language of a single string`, () => {
-    const output = run(`${cmd} detect "${text}"`, cwd);
-    return translate.detect(text)
-      .then((results) => {
-        const expected = `Detections:\n${text} => ${results[0].language}`;
-        assert.equal(output, expected);
-      });
-  });
+test(`should detect language of multiple strings`, (t) => {
+  return runAsync(`${cmd} detect "${text}" "${text2}"`, cwd)
+    .then((stdout) => {
+      return translate.detect([text, text2])
+        .then((results) => {
+          const expected = `Detections:\n${text} => ${results[0][0].language}\n${text2} => ${results[0][1].language}`;
+          t.is(stdout, expected);
+        });
+    });
+});
 
-  it(`should detect language of multiple strings`, () => {
-    const output = run(`${cmd} detect "${text}" "${text2}"`, cwd);
-    return translate.detect([text, text2])
-      .then((results) => {
-        const expected = `Detections:\n${text} => ${results[0][0].language}\n${text2} => ${results[0][1].language}`;
-        assert.equal(output, expected);
-      });
-  });
+test(`should list languages`, (t) => {
+  return runAsync(`${cmd} list`, cwd)
+    .then((stdout) => {
+      t.is(stdout.includes(`Languages:`), true);
+      t.is(stdout.includes(`{ code: 'af', name: 'Afrikaans' }`), true);
+    });
+});
 
-  it(`should list languages`, () => {
-    const output = run(`${cmd} list`, cwd);
-    assert.equal(output.includes(`Languages:`), true);
-    assert.equal(output.includes(`{ code: 'af', name: 'Afrikaans' }`), true);
-  });
+test(`should list languages with a target`, (t) => {
+  return runAsync(`${cmd} list es`, cwd)
+    .then((stdout) => {
+      t.is(stdout.includes(`Languages:`), true);
+      t.is(stdout.includes(`{ code: 'af', name: 'afrikáans' }`), true);
+    });
+});
 
-  it(`should list languages with a target`, () => {
-    const output = run(`${cmd} list es`, cwd);
-    assert.equal(output.includes(`Languages:`), true);
-    assert.equal(output.includes(`{ code: 'af', name: 'afrikáans' }`), true);
-  });
+test(`should translate a single string`, (t) => {
+  return runAsync(`${cmd} translate ${toLang} "${text}"`, cwd)
+    .then((stdout) => {
+      return translate.translate(text, toLang)
+        .then((results) => {
+          const expected = `Translations:\n${text} => (${toLang}) ${results[0]}`;
+          t.is(stdout, expected);
+        });
+    });
+});
 
-  it(`should translate a single string`, () => {
-    const output = run(`${cmd} translate ${toLang} "${text}"`, cwd);
-    return translate.translate(text, toLang)
-      .then((results) => {
-        const expected = `Translations:\n${text} => (${toLang}) ${results[0]}`;
-        assert.equal(output, expected);
-      });
-  });
+test(`should translate multiple strings`, (t) => {
+  return runAsync(`${cmd} translate ${toLang} "${text}" "${text2}"`, cwd)
+    .then((stdout) => {
+      return translate.translate([text, text2], toLang)
+        .then((results) => {
+          const expected = `Translations:\n${text} => (${toLang}) ${results[0][0]}\n${text2} => (${toLang}) ${results[0][1]}`;
+          t.is(stdout, expected);
+        });
+    });
+});
 
-  it(`should translate multiple strings`, () => {
-    const output = run(`${cmd} translate ${toLang} "${text}" "${text2}"`, cwd);
-    return translate.translate([text, text2], toLang)
-      .then((results) => {
-        const expected = `Translations:\n${text} => (${toLang}) ${results[0][0]}\n${text2} => (${toLang}) ${results[0][1]}`;
-        assert.equal(output, expected);
-      });
-  });
+test(`should translate a single string with a model`, (t) => {
+  return runAsync(`${cmd} translate-with-model ${toLang} ${model} "${text}"`, cwd)
+    .then((stdout) => {
+      return translate.translate(text, toLang)
+        .then((results) => {
+          const expected = `Translations:\n${text} => (${toLang}) ${results[0]}`;
+          t.is(stdout, expected);
+        });
+    });
+});
 
-  it(`should translate a single string with a model`, () => {
-    const output = run(`${cmd} translate-with-model ${toLang} ${model} "${text}"`, cwd);
-    return translate.translate(text, toLang)
-      .then((results) => {
-        const expected = `Translations:\n${text} => (${toLang}) ${results[0]}`;
-        assert.equal(output, expected);
-      });
-  });
-
-  it(`should translate multiple strings with a model`, () => {
-    const output = run(`${cmd} translate-with-model ${toLang} ${model} "${text}" "${text2}"`, cwd);
-    return translate.translate([text, text2], toLang)
-      .then((results) => {
-        const expected = `Translations:\n${text} => (${toLang}) ${results[0][0]}\n${text2} => (${toLang}) ${results[0][1]}`;
-        assert.equal(output, expected);
-      });
-  });
+test(`should translate multiple strings with a model`, (t) => {
+  return runAsync(`${cmd} translate-with-model ${toLang} ${model} "${text}" "${text2}"`, cwd)
+    .then((stdout) => {
+      return translate.translate([text, text2], toLang)
+        .then((results) => {
+          const expected = `Translations:\n${text} => (${toLang}) ${results[0][0]}\n${text2} => (${toLang}) ${results[0][1]}`;
+          t.is(stdout, expected);
+        });
+    });
 });

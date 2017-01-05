@@ -36,6 +36,7 @@ queue.push('dns');
 queueDirectories('functions');
 queue.push('functions/ocr/app');
 queue.push('language');
+queue.push('language/slackbot');
 queue.push('logging');
 queue.push('monitoring');
 queue.push('prediction');
